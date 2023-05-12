@@ -8,11 +8,12 @@ bp = Blueprint('tasks', __name__)
 task_schema = TaskSchema()
 tasks_schema = TaskSchema(many=True)
 
+
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
     tasks = Task.query.all()
 
-    return jsonify(tasks), 200
+    return jsonify(tasks_schema.dump(tasks)), 200
 
 
 @app.route("/tasks", methods=["POST"])
@@ -21,12 +22,15 @@ def create_task():
 
     errors = task_schema.validate(new_task_data)
 
-    if(errors):
+    if (errors):
         return jsonify(errors), 400
 
     try:
         new_task = Task(
-            title=new_task_data['title'], description=new_task_data['description'], completed=False)
+            title=new_task_data['title'],
+            description=new_task_data['description'],
+            completed=False
+        )
 
         db.session.add(new_task)
 
@@ -60,24 +64,32 @@ def edit_task(task_id):
 
     errors = task_schema.validate(edit_task)
 
-    if(errors):
+    if (errors):
         return jsonify(errors), 400
 
-    for task in tasks:
-        if task['id'] == task_id:
-            task['id'] = edit_task
+    task = Task.query.get(task_id)
 
-            return jsonify(edit_task), 200
+    if task:
+        task.title = edit_task.get('title', None)
+        task.description = edit_task.get('description', None)
+        task.completed = edit_task.get('completed', False)
+
+        db.session.commit()
+
+        return jsonify({'success': 'The task has been changed successfully'}), 200
 
     return jsonify({'error': 'Task not found'}), 404
 
 
 @app.route("/tasks/<int:task_id>", methods=["DELETE"])
 def remove_task(task_id):
-    for task in tasks:
-        if task['id'] == task_id:
-            tasks.remove(task)
 
-            return jsonify({'message': 'Task removed'}), 200
+    task = Task.query.get(task_id)
+
+    if (task):
+        db.session.delete(task)
+
+        db.session.commit()
+        return jsonify({'success': 'Task has been removed successfully'}), 200
 
     return jsonify({'error': 'Task not found'}), 404
