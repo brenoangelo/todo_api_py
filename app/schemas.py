@@ -1,5 +1,5 @@
-from ma import ma
-from models import Task
+from app.config import ma
+from app.models import Task
 
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:

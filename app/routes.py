@@ -2,9 +2,11 @@
 from flask import Blueprint, jsonify, request
 from app.config import app, db
 from app.models import Task
+from app.schemas import TaskSchema
 
 bp = Blueprint('tasks', __name__)
-
+task_schema = TaskSchema()
+tasks_schema = TaskSchema(many=True)
 
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
@@ -16,6 +18,11 @@ def get_tasks():
 @app.route("/tasks", methods=["POST"])
 def create_task():
     new_task_data = request.json
+
+    errors = task_schema.validate(new_task_data)
+
+    if(errors):
+        return jsonify(errors), 400
 
     try:
         new_task = Task(
@@ -50,6 +57,11 @@ def get_task(task_id):
 @app.route("/tasks/<int:task_id>", methods=["PUT"])
 def edit_task(task_id):
     edit_task = request.get_json()
+
+    errors = task_schema.validate(edit_task)
+
+    if(errors):
+        return jsonify(errors), 400
 
     for task in tasks:
         if task['id'] == task_id:
